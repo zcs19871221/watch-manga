@@ -184,7 +184,14 @@ export const List = <T extends { cover: string; name: string }>({
               />
               <div className={clx(styles.itemInfoWrap, 'vl-itemInfoWrap')}>
                 <div className={clx(styles.name, 'vl-itemName')}>{e.name}</div>
-                {children ? children(e) : null}
+                {children ? (
+                  <div
+                    style={{ height: `${operateAreaHeight}px` }}
+                    className={clx(styles.operateWrap, 'vl-operateWrap')}
+                  >
+                    {children(e)}
+                  </div>
+                ) : null}
               </div>
             </div>
           ))}

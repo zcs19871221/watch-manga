@@ -2,10 +2,34 @@ import React, { useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { useMangaData, Manga } from '../common/manga';
 import { List } from '../common/list';
-import { delManga } from '../common/fetch-interface';
+import { delManga, markMangaReaded } from '../common/fetch-interface';
+import { useSelect } from '../common/use-filters';
 
+const useFilter = (mgs: Manga[]) => {
+  const readStatusOptions: {
+    value: 'all' | 'readed' | 'unread';
+    text: string;
+  }[] = [
+    { value: 'all', text: '全部' },
+    { value: 'readed', text: '已读' },
+    { value: 'unread', text: '未读' },
+  ];
+  const [{ Component: ReadStatus, value: readStatus }] = useSelect<
+    typeof readStatusOptions[number]['value']
+  >({
+    label: '范围',
+    init: mgs.filter((e) => e.readed).length > 0 ? 'unread' : 'all',
+    options: readStatusOptions,
+  });
+
+  if (readStatus === 'unread' || readStatus === 'readed') {
+    mgs = mgs.filter((e) => (readStatus === 'unread' ? !e.readed : e.readed));
+  }
+  return [{ datas: mgs, Filters: [ReadStatus] }];
+};
 export const Local = () => {
   const [{ mgs }, { reload }] = useMangaData();
+  const [{ datas, Filters }] = useFilter(mgs);
   const navigate = useNavigate();
 
   const jumpTo = useCallback(
@@ -15,13 +39,16 @@ export const Local = () => {
     [navigate],
   );
 
-  const operateHeight = 22;
-
   return (
-    <List datas={mgs} onClickCover={jumpTo} operateAreaHeight={operateHeight}>
+    <List
+      datas={datas}
+      onClickCover={jumpTo}
+      operateAreaHeight={25}
+      filterElements={Filters}
+    >
       {(e) => {
         return (
-          <div style={{ height: `${operateHeight}px` }}>
+          <>
             <button
               onClick={() => {
                 if (window.confirm('是否删除')) {
@@ -31,7 +58,15 @@ export const Local = () => {
             >
               删除
             </button>
-          </div>
+            {!e.readed && (
+              <button
+                onClick={() => markMangaReaded(e.name).then(reload)}
+                style={{ marginLeft: '5px' }}
+              >
+                读完
+              </button>
+            )}
+          </>
         );
       }}
     </List>

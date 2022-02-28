@@ -60,3 +60,8 @@
   overflow: hidden;
   height: 22px;
 }
+
+.operateWrap {
+  display: flex;
+  align-items: center;
+}
