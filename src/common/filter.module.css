@@ -1,0 +1,11 @@
+.defaultInputWrap {
+  display: flex;
+  align-items: center;
+}
+.defaultCheckBoxWrap {
+  display: flex;
+  align-items: flex-end;
+}
+.defaultInputWrap input {
+  max-width: 4em;
+}

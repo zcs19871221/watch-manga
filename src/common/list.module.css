@@ -1,0 +1,62 @@
+.wrap {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.filterWrap {
+  display: flex;
+  top: 0;
+  align-items: center;
+  background-color: #f1f1f1;
+  padding: 5px 0px 2px 5px;
+  flex-wrap: wrap;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  height: 50px;
+}
+.filterItem {
+  flex: 1 0 auto;
+}
+
+.contentWrap {
+  overflow: auto;
+  position: relative;
+  flex: 1;
+}
+.displayedWrap {
+  position: absolute;
+  grid-template-columns: repeat(auto-fill, 180px);
+  gap: 15px;
+  display: grid;
+  width: 100%;
+  padding: 0 10px;
+  box-sizing: border-box;
+  justify-content: space-around;
+  top: 0;
+}
+.itemWrap {
+  box-shadow: 0px 1px 3px 3px rgb(134 132 132);
+}
+.itemCover {
+  width: 100%;
+  height: 0;
+  padding-top: 133.333%;
+  background-position: center bottom;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.itemInfoWrap {
+  text-align: left;
+  display: flex;
+  flex-flow: column;
+}
+
+.name {
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  height: 22px;
+}
