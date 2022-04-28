@@ -13,6 +13,7 @@ export interface Manga {
   cover: string;
   volumes: Volume[];
   readed?: boolean;
+  isCollect?: boolean;
 }
 
 export const fetchBase = 'https://192.168.0.106:8000';
@@ -69,6 +70,26 @@ export const delManga = async (mangaName: string): Promise<void> => {
 };
 
 export const markMangaReaded = async (mangaName: string): Promise<any> => {
-  await fetch(`${fetchBase}/markread/${mangaName}`, optionBase);
+  await fetch(
+    `${fetchBase}/markread/${mangaName}?readedStatus=true`,
+    optionBase,
+  );
+  return;
+};
+
+export const markMangaUnReaded = async (mangaName: string): Promise<any> => {
+  await fetch(
+    `${fetchBase}/markread/${mangaName}?readedStatus=false`,
+    optionBase,
+  );
+  return;
+};
+
+export const collectManga = async (mangaName: string): Promise<any> => {
+  await fetch(`${fetchBase}/collect/${mangaName}?isCollect=true`, optionBase);
+  return;
+};
+export const unCollectManga = async (mangaName: string): Promise<any> => {
+  await fetch(`${fetchBase}/collect/${mangaName}?isCollect=false`, optionBase);
   return;
 };

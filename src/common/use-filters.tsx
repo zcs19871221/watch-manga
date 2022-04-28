@@ -8,11 +8,13 @@ interface FilterHook<T = string, OPT = {}> {
     init,
     className,
     opt,
+    onChange,
   }: {
     label: string;
     init?: T;
     opt?: OPT;
     className?: string;
+    onChange?: (v: any) => void;
   }): [
     { Component: JSX.Element; value: T },
     { setValue: React.Dispatch<React.SetStateAction<T>> },
@@ -54,15 +56,21 @@ export const useCheckBox: FilterHook<boolean> = ({
   label,
   init = false,
   className = styles.defaultCheckBoxWrap,
+  onChange,
 }: {
   label: string;
   init?: boolean;
   className?: string;
+  onChange?: (v: any) => void;
 }) => {
   const [value, setValue] = useState(init);
-  const handleInput = useCallback((e) => {
-    setValue(e.target.checked);
-  }, []);
+  const handleInput = useCallback(
+    (e) => {
+      setValue(e.target.checked);
+      onChange && onChange(e.target.checked);
+    },
+    [onChange],
+  );
   const reset = useCallback(() => {
     setValue(init);
   }, [init]);
@@ -83,20 +91,28 @@ export const useCheckBox: FilterHook<boolean> = ({
 
 let id = 0;
 export const useRadio = <T,>({
-  label,
+  label = '',
   options,
   init = options[0].value,
   className = styles.defaultCheckBoxWrap,
+  onChange,
 }: {
   options: { text: string; value: T }[];
-  label: string;
+  label?: string;
+  onChange?: (value: any) => void;
   init?: T;
   className?: string;
 }) => {
   const [value, setValue] = useState(init);
-  const handleInput = useCallback((e) => {
-    setValue(e.target.value);
-  }, []);
+  const handleInput = useCallback(
+    (e) => {
+      setValue(e.target.value);
+      if (onChange) {
+        onChange(e.target.value);
+      }
+    },
+    [onChange],
+  );
   const reset = useCallback(() => {
     setValue(init);
   }, [init]);
@@ -105,9 +121,9 @@ export const useRadio = <T,>({
     return (
       <label className={className}>
         {label}
-        <div style={{ marginLeft: '5px' }}>
-          {options.map((ee) => (
-            <label>
+        <div>
+          {options.map((ee, i) => (
+            <label style={i > 0 ? { marginLeft: '5px' } : {}}>
               {ee.text}
               <input
                 onChange={handleInput}
@@ -125,6 +141,9 @@ export const useRadio = <T,>({
   return [
     { Component, value },
     { setValue, reset },
+  ] as [
+    { Component: JSX.Element; value: T },
+    { setValue: React.Dispatch<React.SetStateAction<T>>; reset: () => void },
   ];
 };
 export const useSelect = <T,>({

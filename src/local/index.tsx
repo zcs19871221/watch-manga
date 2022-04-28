@@ -2,8 +2,14 @@ import React, { useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { useMangaData, Manga } from '../common/manga';
 import { List } from '../common/list';
-import { delManga, markMangaReaded } from '../common/fetch-interface';
-import { useSelect } from '../common/use-filters';
+import {
+  delManga,
+  markMangaReaded,
+  collectManga,
+  unCollectManga,
+  markMangaUnReaded,
+} from '../common/fetch-interface';
+import { useCheckBox, useRadio } from '../common/use-filters';
 
 const useFilter = (mgs: Manga[]) => {
   const readStatusOptions: {
@@ -14,18 +20,28 @@ const useFilter = (mgs: Manga[]) => {
     { value: 'readed', text: '已读' },
     { value: 'unread', text: '未读' },
   ];
-  const [{ Component: ReadStatus, value: readStatus }] = useSelect<
+  const [{ Component: ReadStatus, value: readStatus }] = useRadio<
     typeof readStatusOptions[number]['value']
   >({
-    label: '范围',
-    init: mgs.filter((e) => e.readed).length > 0 ? 'unread' : 'all',
+    init: (localStorage.getItem('readStatus') as any) || 'all',
     options: readStatusOptions,
+    onChange: (v: any) => {
+      localStorage.setItem('readStatus', v);
+    },
+  });
+  const [{ Component: Collect, value: isCollect }] = useCheckBox({
+    init: localStorage.getItem('isCollect') === 'true' || false,
+    label: '收藏',
+    onChange: (v: any) => {
+      localStorage.setItem('isCollect', v);
+    },
   });
 
   if (readStatus === 'unread' || readStatus === 'readed') {
     mgs = mgs.filter((e) => (readStatus === 'unread' ? !e.readed : e.readed));
   }
-  return [{ datas: mgs, Filters: [ReadStatus] }];
+  mgs = mgs.filter((e) => (isCollect ? e.isCollect : !e.isCollect));
+  return [{ datas: mgs, Filters: [ReadStatus, Collect] }];
 };
 export const Local = () => {
   const [{ mgs }, { reload }] = useMangaData();
@@ -59,12 +75,36 @@ export const Local = () => {
             >
               删除
             </button>
+            {!e.isCollect && (
+              <button
+                onClick={() => collectManga(e.name).then(reload)}
+                style={{ marginLeft: '5px' }}
+              >
+                收藏
+              </button>
+            )}
+            {e.isCollect && (
+              <button
+                onClick={() => unCollectManga(e.name).then(reload)}
+                style={{ marginLeft: '5px' }}
+              >
+                取消收藏
+              </button>
+            )}
             {!e.readed && (
               <button
                 onClick={() => markMangaReaded(e.name).then(reload)}
                 style={{ marginLeft: '5px' }}
               >
                 读完
+              </button>
+            )}
+            {e.readed && (
+              <button
+                onClick={() => markMangaUnReaded(e.name).then(reload)}
+                style={{ marginLeft: '5px' }}
+              >
+                未读
               </button>
             )}
           </>

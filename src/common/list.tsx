@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useRef, useMemo } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useRef,
+  useMemo,
+  useState,
+} from 'react';
 import clx from 'classnames';
 import styles from './list.module.css';
 import { useViewPort } from './viewport';
@@ -9,11 +15,12 @@ const useVirtualScroll = <T,>(
   mgs: T[],
   listTop: number,
   infoAreaHeight: number = 45,
-  offsetKey: OffsetKeys,
+  offset: number,
+  setOffset: any,
+  isScrolling: boolean,
 ) => {
   const { vw, vh } = useViewPort();
 
-  const [offset, setOffset] = useOffset(offsetKey);
   const { rows, columns, totalHeight, gap, itemHeight } = useMemo(() => {
     const itemWidth = 180;
     const contentLeftRightPadding = 10;
@@ -49,13 +56,16 @@ const useVirtualScroll = <T,>(
 
   const handleScroll = useCallback(
     (e) => {
+      if (isScrolling) {
+        return;
+      }
       const top = e.target.scrollTop;
       const currentStartIndex = Math.floor(top / (itemHeight + gap)) * columns;
       if (offset !== currentStartIndex) {
-        setOffset(currentStartIndex);
+        setOffset({ offset: currentStartIndex });
       }
     },
-    [columns, gap, itemHeight, setOffset, offset],
+    [isScrolling, itemHeight, gap, columns, offset, setOffset],
   );
 
   const transform = useMemo(() => {
@@ -90,17 +100,24 @@ export const List = <T extends { cover: string; name: string }>({
   filterElements?: JSX.Element[];
 } & OperateRelated<T>) => {
   const dom = useRef<HTMLDivElement>(null);
-
+  const [{ offset, scrollTop }, setOffset] = useOffset(offsetKey);
+  const [isScrolling, setIsScrolling] = useState(false);
   const { totalHeight, transform, handleScroll, list } = useVirtualScroll(
     datas,
     filterElements ? 50 : 0,
     operateAreaHeight || 0,
-    offsetKey,
+    offset,
+    setOffset,
+    isScrolling,
   );
 
   useEffect(() => {
     if (!dom.current) {
       return;
+    }
+
+    if (isScrolling) {
+      setIsScrolling(false);
     }
     const imgs = Array.from(
       dom.current.querySelectorAll(`.${styles.itemCover}`),
@@ -132,8 +149,17 @@ export const List = <T extends { cover: string; name: string }>({
         ob.unobserve(img);
       });
     };
-  }, [list]);
+  }, [isScrolling, list, scrollTop]);
 
+  useEffect(() => {
+    if (!dom.current) {
+      return;
+    }
+    if (scrollTop) {
+      setIsScrolling(true);
+      dom.current.scrollTop = scrollTop;
+    }
+  }, [scrollTop]);
   return (
     <div className={clx(styles.wrap, className)}>
       {filterElements && (
@@ -165,7 +191,12 @@ export const List = <T extends { cover: string; name: string }>({
               <div
                 className={clx(styles.itemCover, 'vl-itemCover')}
                 data-src={e.cover}
-                onClick={() => onClickCover && onClickCover(e)}
+                onClick={() => {
+                  if (dom.current) {
+                    setOffset({ scrollTop: dom.current.scrollTop });
+                  }
+                  onClickCover && onClickCover(e);
+                }}
                 style={
                   onClickCover
                     ? {
