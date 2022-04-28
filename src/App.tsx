@@ -1,5 +1,10 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  useNavigate,
+} from 'react-router-dom';
 
 import { useRoutes } from './router';
 import { Detail } from './detail';
@@ -21,22 +26,27 @@ const routeConfigs = [
     Component: <Local />,
     name: '本地',
   },
+  {
+    path: 'search',
+    Component: <Local />,
+    name: '测试',
+  },
 ];
 const Loader = () => <div>Loading...</div>;
 
-// const Entry = ({ routes }: { routes: RoutesConfig[] }) => {
-//   const navigate = useNavigate();
+const Entry = ({ routes }: { routes: any[] }) => {
+  const navigate = useNavigate();
 
-//   return (
-//     <div>
-//       {routes
-//         .filter((e) => !e.hide)
-//         .map((e) => (
-//           <button onClick={() => navigate(e.path)}>{e.dir || e.name}</button>
-//         ))}
-//     </div>
-//   );
-// };
+  return (
+    <div>
+      {routes
+        .filter((e) => !e.hide)
+        .map((e) => (
+          <button onClick={() => navigate(e.path)}>{e.dir || e.name}</button>
+        ))}
+    </div>
+  );
+};
 
 const App = () => {
   const { routes } = useRoutes({

@@ -1,22 +1,19 @@
-import React, {
-  useCallback,
-  useEffect,
-  useState,
-  useRef,
-  useMemo,
-} from 'react';
+import React, { useCallback, useEffect, useRef, useMemo } from 'react';
 import clx from 'classnames';
 import styles from './list.module.css';
 import { useViewPort } from './viewport';
+import { useOffset, OffsetKeys } from './offset';
 import scrollStyles from '../detail/scroll/index.module.css';
 
 const useVirtualScroll = <T,>(
   mgs: T[],
   listTop: number,
   infoAreaHeight: number = 45,
+  offsetKey: OffsetKeys,
 ) => {
   const { vw, vh } = useViewPort();
 
+  const [offset, setOffset] = useOffset(offsetKey);
   const { rows, columns, totalHeight, gap, itemHeight } = useMemo(() => {
     const itemWidth = 180;
     const contentLeftRightPadding = 10;
@@ -39,39 +36,31 @@ const useVirtualScroll = <T,>(
       itemHeight,
     };
   }, [infoAreaHeight, listTop, mgs.length, vh, vw]);
-  const [startIndex, setStartIndex] = useState(0);
-  const [transform, setTransform] = useState(0);
+  // const [startIndex, setStartIndex] = useState(0);
 
   const cacheCount = columns * 2;
 
   const list = useMemo(() => {
-    const begin = Math.max(0, startIndex - cacheCount);
-    const end = Math.min(startIndex + rows * columns + cacheCount, mgs.length);
+    const begin = Math.max(0, offset - cacheCount);
+    const end = Math.min(offset + rows * columns + cacheCount, mgs.length);
 
     return mgs.slice(begin, end);
-  }, [cacheCount, columns, mgs, rows, startIndex]);
+  }, [cacheCount, columns, mgs, rows, offset]);
 
   const handleScroll = useCallback(
     (e) => {
-      const getBegin = (index: number) => Math.max(0, index - cacheCount);
-
       const top = e.target.scrollTop;
       const currentStartIndex = Math.floor(top / (itemHeight + gap)) * columns;
-      if (startIndex !== currentStartIndex) {
-        setStartIndex(currentStartIndex);
-        const curBegin = getBegin(currentStartIndex);
-        const prevBegin = getBegin(startIndex);
-        const sub =
-          (currentStartIndex - prevBegin - (currentStartIndex - curBegin)) /
-          columns;
-        if (sub !== 0) {
-          setTransform((prev) => prev + sub * (itemHeight + gap));
-        }
+      if (offset !== currentStartIndex) {
+        setOffset(currentStartIndex);
       }
     },
-    [cacheCount, columns, gap, itemHeight, startIndex],
+    [columns, gap, itemHeight, setOffset, offset],
   );
 
+  const transform = useMemo(() => {
+    return (Math.max(0, offset - cacheCount) / columns) * (itemHeight + gap);
+  }, [cacheCount, columns, gap, itemHeight, offset]);
   return { transform, handleScroll, totalHeight, list };
 };
 
@@ -90,12 +79,14 @@ export const List = <T extends { cover: string; name: string }>({
   filterElements,
   operateAreaHeight,
   className,
+  offsetKey,
   onClickCover,
   children,
 }: {
   datas: T[];
   className?: string;
   onClickCover?: (e: T) => void;
+  offsetKey: OffsetKeys;
   filterElements?: JSX.Element[];
 } & OperateRelated<T>) => {
   const dom = useRef<HTMLDivElement>(null);
@@ -104,6 +95,7 @@ export const List = <T extends { cover: string; name: string }>({
     datas,
     filterElements ? 50 : 0,
     operateAreaHeight || 0,
+    offsetKey,
   );
 
   useEffect(() => {

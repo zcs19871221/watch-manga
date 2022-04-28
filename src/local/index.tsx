@@ -45,6 +45,7 @@ export const Local = () => {
       onClickCover={jumpTo}
       operateAreaHeight={25}
       filterElements={Filters}
+      offsetKey='list'
     >
       {(e) => {
         return (
