@@ -1,7 +1,7 @@
-export const prevBufCount = 1;
-export const displayCount = 2;
-export const nextBufCount = 1;
-export const preCacheCount = 5;
+export const prevBufCount = 3;
+export const displayCount = 1;
+export const nextBufCount = 3;
+export const preCacheCount = 10;
 
 export const operateClickableArea: {
   x: number;

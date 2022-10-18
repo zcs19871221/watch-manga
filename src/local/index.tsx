@@ -1,6 +1,5 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { useMangaData, Manga } from '../common/manga';
 import { List } from '../common/list';
 import {
   delManga,
@@ -8,7 +7,10 @@ import {
   collectManga,
   unCollectManga,
   markMangaUnReaded,
-} from '../common/fetch-interface';
+  Manga,
+  fetchMangas,
+} from '../service/fetch-interface';
+import { useMangaDatas } from '../service/use-mangas';
 import { useCheckBox, useRadio } from '../common/use-filters';
 
 const useFilter = (mgs: Manga[]) => {
@@ -38,13 +40,17 @@ const useFilter = (mgs: Manga[]) => {
   });
 
   if (readStatus === 'unread' || readStatus === 'readed') {
-    mgs = mgs.filter((e) => (readStatus === 'unread' ? !e.readed : e.readed));
+    mgs = mgs.filter((e) =>
+      readStatus === 'readed' ? e.hasBeenRead : !e.hasBeenRead,
+    );
   }
-  mgs = mgs.filter((e) => (isCollect ? e.isCollect : !e.isCollect));
+  mgs = mgs.filter((e) =>
+    isCollect ? e.hasBeenCollected : !e.hasBeenCollected,
+  );
   return [{ datas: mgs, Filters: [ReadStatus, Collect] }];
 };
 export const Local = () => {
-  const [{ mgs }, { reload }] = useMangaData();
+  const [{ mgs }, { reload }] = useMangaDatas();
   const [{ datas, Filters }] = useFilter(mgs);
   const navigate = useNavigate();
 
