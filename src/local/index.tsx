@@ -8,10 +8,11 @@ import {
   unCollectManga,
   markMangaUnReaded,
   Manga,
-  fetchMangas,
+  imgUrl,
 } from '../service/fetch-interface';
 import { useMangaDatas } from '../service/use-mangas';
 import { useCheckBox, useRadio } from '../common/use-filters';
+import { VirtualList } from '../common/virtual-list';
 
 const useFilter = (mgs: Manga[]) => {
   const readStatusOptions: {
@@ -52,71 +53,33 @@ const useFilter = (mgs: Manga[]) => {
 export const Local = () => {
   const [{ mgs }, { reload }] = useMangaDatas();
   const [{ datas, Filters }] = useFilter(mgs);
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
-  const jumpTo = useCallback(
-    (e: Manga) => {
-      navigate(`/d?mangaName=${e.name}`);
-    },
-    [navigate],
+  // const jumpTo = useCallback(
+  //   (e: Manga) => {
+  //     navigate(`/d?mangaName=${e.name}`);
+  //   },
+  //   [navigate],
+  // );
+
+  const mangaList = datas.map(
+    (data): Manga & { width: number; height: number } => ({
+      ...data,
+      width: data.cover.width,
+      height: data.cover.height,
+    }),
   );
 
   return (
-    <List
-      datas={datas}
-      onClickCover={jumpTo}
-      operateAreaHeight={25}
-      filterElements={Filters}
-      offsetKey='list'
-    >
+    <VirtualList datas={mangaList} rowGap={10} columnGap={10}>
       {(e) => {
         return (
-          <>
-            <button
-              onClick={() => {
-                if (window.confirm('是否删除')) {
-                  delManga(e.name).then(reload);
-                }
-              }}
-            >
-              删除
-            </button>
-            {!e.isCollect && (
-              <button
-                onClick={() => collectManga(e.name).then(reload)}
-                style={{ marginLeft: '5px' }}
-              >
-                收藏
-              </button>
-            )}
-            {e.isCollect && (
-              <button
-                onClick={() => unCollectManga(e.name).then(reload)}
-                style={{ marginLeft: '5px' }}
-              >
-                取消收藏
-              </button>
-            )}
-            {!e.readed && (
-              <button
-                onClick={() => markMangaReaded(e.name).then(reload)}
-                style={{ marginLeft: '5px' }}
-              >
-                读完
-              </button>
-            )}
-            {e.readed && (
-              <button
-                onClick={() => markMangaUnReaded(e.name).then(reload)}
-                style={{ marginLeft: '5px' }}
-              >
-                未读
-              </button>
-            )}
-          </>
+          <div>
+            <img src={imgUrl(e.name, 'cover.jpg')} />
+          </div>
         );
       }}
-    </List>
+    </VirtualList>
   );
 };
 

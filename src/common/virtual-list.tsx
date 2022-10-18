@@ -1,17 +1,18 @@
-import { useState } from 'react';
+import { useState, useRef, ReactNode } from 'react';
+import clx from 'classnames';
+import commonStyles from './list.module.css';
 
-interface Props<
-  T extends {
-    width: number;
-    height: number;
-  },
-> {
+interface CommonProps {
+  width: number;
+  height: number;
+}
+interface Props<T extends CommonProps> {
   datas: T[];
-  columnsCount: number;
-  offset: number;
+  columnGap: number;
+  rowGap: number;
   containerWidth: number;
   containerHeight: number;
-  cacheRatio: number;
+  cacheRatio?: number;
 }
 const bs = (list: number[], target: number): number => {
   let start = 0;
@@ -28,20 +29,26 @@ const bs = (list: number[], target: number): number => {
   return start;
 };
 
-export const useVirtualScroll = <T extends { width: number; height: number }>({
+export const useVirtualScroll = <T extends CommonProps>({
   datas,
-  columnsCount,
+  columnGap = 0,
+  rowGap = 0,
   containerHeight,
   containerWidth,
   cacheRatio,
 }: Props<T>) => {
   const length = datas.length;
   const accSum = new Array(length).fill(0);
-
+  let columnsCount = 1;
+  if (columnGap) {
+    columnsCount = Math.floor(
+      (containerWidth + columnGap) / (datas[0].width + columnGap),
+    );
+  }
   for (let i = 1; i <= length; i++) {
     if (i % columnsCount === 0) {
       const { height, width } = datas[i - 1];
-      accSum[i] += Math.min(height, (containerWidth / width) * height);
+      accSum[i] += Math.min(height, (containerWidth / width) * height) + rowGap;
     } else {
       accSum[i] = accSum[i - 1];
     }
@@ -60,7 +67,7 @@ export const useVirtualScroll = <T extends { width: number; height: number }>({
   const [indexScope, setIndexScope] = useState<readonly [number, number]>(
     calScope(0),
   );
-  const cacheDistance = cacheRatio * containerHeight;
+  const cacheDistance = (cacheRatio ?? 1) * containerHeight;
 
   const transform = accSum[indexScope[0]];
 
@@ -73,91 +80,61 @@ export const useVirtualScroll = <T extends { width: number; height: number }>({
   };
 
   return {
+    totalHeight,
     transform,
     displayedList: datas.slice(indexScope[0], indexScope[1]),
     handleScroll,
   };
 };
 
-export const VirtualList = <
-  T extends { cover: string; name: string; height: number; width: number },
->({
+export const VirtualList = <T extends { width: number; height: number }>({
   datas,
-  filterElements,
-  operateAreaHeight,
-  className,
-  offsetKey,
-  onClickCover,
+  rowGap,
+  columnGap,
+  styles = {},
   children,
 }: {
   datas: T[];
-  className?: string;
-  onClickCover?: (e: T) => void;
-  filterElements?: JSX.Element[];
-} & OperateRelated<T>) => {
+  styles?: {
+    wrapClassName?: string;
+    contentClassName?: string;
+  };
+  rowGap: number;
+  columnGap: number;
+  children: (data: T) => ReactNode;
+}) => {
   const dom = useRef<HTMLDivElement>(null);
-  const [{ offset, scrollTop }, setOffset] = useOffset(offsetKey);
-  const [isScrolling, setIsScrolling] = useState(false);
-  const { totalHeight, transform, handleScroll, list } = useVirtualScroll({
-    datas,
-    columnsCount,
-    containerHeight,
-    containerWidth,
-    cacheRatio,
-  });
+  const containerWidth = 0;
+  const containerHeight = 0;
+
+  const { transform, displayedList, handleScroll, totalHeight } =
+    useVirtualScroll({
+      datas,
+      containerHeight,
+      rowGap,
+      columnGap,
+      containerWidth,
+    });
 
   return (
-    <div className={clx(styles.wrap, className)}>
+    <div
+      ref={dom}
+      onScroll={handleScroll}
+      className={clx(commonStyles.contentWrap, styles.contentClassName)}
+    >
       <div
-        ref={dom}
-        onScroll={handleScroll}
-        className={clx(styles.contentWrap, className)}
+        className={commonStyles.phantomList}
+        style={{
+          height: totalHeight,
+        }}
+      ></div>
+      <div
+        style={{
+          transform: `translate3d(0px, ${transform}px, 0px)`,
+        }}
+        className={clx(commonStyles.displayedWrap, styles.contentClassName)}
       >
-        <div
-          className={scrollStyles.phantomList}
-          style={{
-            height: totalHeight,
-          }}
-        ></div>
-        <div
-          style={{
-            transform: `translate3d(0px, ${transform}px, 0px)`,
-          }}
-          className={clx(styles.displayedWrap, 'vl-displayWrap')}
-        >
-          {list.map((e) => (
-            <div className={clx(styles.itemWrap, 'vl-itemWrap')} key={e.name}>
-              <div
-                className={clx(styles.itemCover, 'vl-itemCover')}
-                data-src={e.cover}
-                onClick={() => {
-                  if (dom.current) {
-                    setOffset({ scrollTop: dom.current.scrollTop });
-                  }
-                  onClickCover && onClickCover(e);
-                }}
-                style={
-                  onClickCover
-                    ? {
-                        cursor: 'pointer',
-                      }
-                    : {}
-                }
-              />
-              <div className={clx(styles.itemInfoWrap, 'vl-itemInfoWrap')}>
-                <div className={clx(styles.name, 'vl-itemName')}>{e.name}</div>
-                {children ? (
-                  <div
-                    style={{ height: `${operateAreaHeight}px` }}
-                    className={clx(styles.operateWrap, 'vl-operateWrap')}
-                  >
-                    {children(e)}
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          ))}
-        </div>
+        {displayedList.map(children)}
       </div>
     </div>
   );

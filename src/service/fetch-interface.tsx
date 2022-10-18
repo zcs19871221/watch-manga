@@ -11,9 +11,17 @@ export interface Manga {
   fetchedAll: boolean;
   hasBeenCollected: boolean;
   hasBeenRead: boolean;
+  cover: {
+    width: number;
+    height: number;
+  };
 }
 
 export const fetchBase = 'https://192.168.0.106:8000';
+
+export const imgUrl = (...paths: string[]) => {
+  return encodeURI([fetchBase, 'imgs', ...paths].join('/'));
+};
 const optionBase = {
   headers: {
     'Content-Type': 'application/json',
