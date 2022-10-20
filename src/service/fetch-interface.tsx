@@ -1,5 +1,10 @@
+export interface Page {
+  width: number;
+  height: number;
+  suffix: string;
+}
 type Unit = {
-  pages: { width: number; height: number; suffix: string }[];
+  pages: Page[];
 };
 
 export interface Manga {
@@ -17,7 +22,7 @@ export interface Manga {
   };
 }
 
-export const fetchBase = 'https://192.168.0.106:8000';
+export const fetchBase = 'https://192.168.0.117:8000';
 
 export const imgUrl = (...paths: string[]) => {
   return encodeURI([fetchBase, 'imgs', ...paths].join('/'));
@@ -30,13 +35,11 @@ const optionBase = {
 
 export interface ReadPoint {
   mangaName: string;
-  volumePage: number;
-  chapterPage: number;
+  volumes: number;
+  chapters: number;
 }
 
-export const fetchReadPoint = async (
-  mangaName: string,
-): Promise<ReadPoint | null> => {
+export const fetchReadPoint = async (mangaName: string): Promise<ReadPoint> => {
   const res = await fetch(
     `${fetchBase}/readpoint?manga=${mangaName}`,
     optionBase,

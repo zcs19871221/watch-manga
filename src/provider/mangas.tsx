@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect, useMemo, useContext } from 'react';
-import { Manga, fetchMangas } from '../service/fetch-interface';
+import { Manga, fetchMangas, Page } from '../service/fetch-interface';
 
 const useInitData = () => {
   const [mgs, setMgs] = useState<Manga[]>([]);
@@ -15,26 +15,26 @@ const useInitData = () => {
   }, []);
 
   return useMemo(() => {
-    const getManga = (mangaName: string) => {
-      return mgs.find((e) => e.name === mangaName);
+    const getPages = (mangaName: string, type: 'volumes' | 'chapters') => {
+      const manga = mgs.find((e) => e.name === mangaName);
+      if (manga) {
+        const pages = manga[type].reduce((acc, cur) => {
+          acc.push(...cur.pages);
+          return acc;
+        }, [] as Page[]);
+        return pages;
+      }
+      return null;
     };
 
-    return [
-      { mgs },
-      {
-        getManga,
-        reload,
-      },
-    ] as const;
+    return { mgs, getPages, reload } as const;
   }, [mgs]);
 };
-const MangaContext = createContext<ReturnType<typeof useInitData>>([
-  { mgs: [] },
-  {
-    getManga: () => undefined,
-    reload: () => {},
-  },
-]);
+const MangaContext = createContext<ReturnType<typeof useInitData>>({
+  mgs: [],
+  getPages: () => null,
+  reload: () => {},
+});
 
 export function MangaDataProvider({ children }: { children: any }) {
   const value = useInitData();

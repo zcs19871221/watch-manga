@@ -1,54 +1,25 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 
-import { useRoutes } from './router';
-import { Detail } from './detail';
-import { Local } from './local';
-import { MangaDataProvider } from './service/mangas-provider';
-import { ViewportProvider } from './common/viewport';
-import { OffsetProvider } from './common/offset';
+import { MangaDataProvider } from './provider/mangas';
+import { ViewportProvider } from './provider/viewport';
+import { MangaList } from './mangaList';
+import { Scroll } from './scroll';
 
+import 'antd/dist/antd.min.css';
 import './App.css';
 
-const routeConfigs = [
-  {
-    path: 'd',
-    Component: <Detail />,
-    hide: true,
-  },
-  {
-    path: 'l',
-    Component: <Local />,
-    name: '本地',
-  },
-  {
-    path: 'search',
-    Component: <Local />,
-    name: '测试',
-  },
-];
-const Loader = () => <div>Loading...</div>;
-
 const App = () => {
-  const { routes } = useRoutes({
-    routeConfigs,
-    Loader,
-  });
-
   return (
     <div className='App'>
       <MangaDataProvider>
         <ViewportProvider>
-          <OffsetProvider>
-            <Router>
-              <Routes>
-                {routes.map((e) => (
-                  <Route path={e.path} element={e.Component} />
-                ))}
-                <Route path='*' element={<Local />} />
-              </Routes>
-            </Router>
-          </OffsetProvider>
+          <Router>
+            <Routes>
+              <Route path='/detail/:mangaName/:type' element={<Scroll />} />
+              <Route path='*' element={<MangaList />} />
+            </Routes>
+          </Router>
         </ViewportProvider>
       </MangaDataProvider>
     </div>

@@ -1,4 +1,4 @@
-import { useState, useRef, ReactNode, useEffect, useLayoutEffect } from 'react';
+import { useState, useRef, ReactNode, useEffect, useMemo } from 'react';
 import clx from 'classnames';
 
 import commonStyles from './index.module.css';
@@ -46,37 +46,62 @@ export const VirtualList = <T extends { width: number; height: number }>({
   });
 
   const [scrollTop, setScrollTop] = useState(0);
-
   const key = 'scrollTop' + name;
-  const length = datas.length;
-  const accSum: number[] = [];
-  const realHeights: number[] = [];
-  let columnsCount = 1;
-  if (columnGap) {
-    columnsCount = Math.floor(
-      (size.width + columnGap) / (datas[0].width + columnGap),
-    );
-  }
-  let acc = 0;
-  for (let i = 0; i < length; i++) {
-    if (i % columnsCount === 0) {
-      const { height, width } = datas[i];
-      const displayHeight = Math.min(
-        height,
-        Math.round((size.width / width) * height),
-      );
-      realHeights.push(displayHeight);
-      acc += displayHeight + rowGap;
-    }
-    accSum.push(acc);
-  }
 
-  const totalHeight = accSum[length - 1];
+  const { accSum, realHeights } = useMemo(() => {
+    const length = datas.length;
+    const accSum: number[] = [];
+    const realHeights: number[] = [];
+    let columnsCount = 1;
+    if (columnGap) {
+      columnsCount = Math.floor(
+        (size.width + columnGap) / (datas[0].width + columnGap),
+      );
+    }
+    let acc = 0;
+    for (let i = 0; i < length; i++) {
+      if (i % columnsCount === 0) {
+        const { height, width } = datas[i];
+        const displayHeight = Math.min(
+          height,
+          Math.round((size.width / width) * height),
+        );
+        realHeights.push(displayHeight);
+        acc += displayHeight + rowGap;
+      }
+      accSum.push(acc);
+    }
+
+    return { accSum, realHeights };
+  }, [columnGap, datas, rowGap, size.width]);
+
+  useEffect(() => {
+    if (!dom.current) {
+      return;
+    }
+    let index = 0;
+    let ratio = 1;
+    try {
+      ({ index, ratio } = JSON.parse(localStorage.getItem(key) ?? ''));
+    } catch {}
+
+    const targetScrollTop = accSum[index] - realHeights[index] * ratio;
+    // console.log('manual scroll', index, ratio, targetScrollTop);
+    clearTimeout(manualScrollingContoller.current.timer);
+
+    manualScrollingContoller.current.timer = setTimeout(() => {
+      manualScrollingContoller.current.isScrolling = false;
+    }, 500);
+    manualScrollingContoller.current.isScrolling = true;
+    setScrollTop(targetScrollTop);
+    dom.current.scrollTop = targetScrollTop;
+  }, [accSum, realHeights, key, size.height, size.width]);
+
+  const totalHeight = accSum[datas.length - 1];
 
   const cacheDistance = (cacheRatio ?? 1) * size.height;
 
   const startIndex = bs(accSum, scrollTop - cacheDistance);
-  const curIndex = bs(accSum, scrollTop);
   const endIndex = bs(
     accSum,
     Math.min(totalHeight, scrollTop + size.height + cacheDistance),
@@ -99,48 +124,29 @@ export const VirtualList = <T extends { width: number; height: number }>({
     return () => window.removeEventListener('resize', calContainer);
   }, []);
 
-  const cache = useRef<{
-    isManualScrolling: boolean;
-    prevWidth: number;
-    prevHeight: number;
-  }>({ isManualScrolling: false, prevWidth: 0, prevHeight: 0 });
+  const manualScrollingContoller = useRef<{
+    isScrolling: boolean;
+    timer: any;
+  }>({ isScrolling: false, timer: 0 });
 
   const handleScroll = (e: any) => {
-    if (cache.current.isManualScrolling) {
+    if (manualScrollingContoller.current.isScrolling) {
       return;
     }
 
     const currentScrollTop = e.target.scrollTop;
+    const index = bs(accSum, scrollTop);
+    const ratio = (accSum[index] - currentScrollTop) / realHeights[index];
     localStorage.setItem(
       key,
       JSON.stringify({
-        curIndex: bs(accSum, scrollTop),
-        ratio:
-          (accSum[curIndex] - currentScrollTop) / displayedHeights[curIndex],
+        index,
+        ratio,
       }),
     );
+    console.log('triger scroll', index, ratio);
     setScrollTop(currentScrollTop);
   };
-
-  useEffect(() => {
-    const { prevWidth } = cache.current;
-    const { index, ratio } = JSON.parse(
-      localStorage.getItem(key) ?? '{index: 0, ratio: 1}',
-    );
-
-    if (size.width !== prevWidth && size.width > 0) {
-      if (!dom.current) {
-        return;
-      }
-      const targetScrollTop = accSum[index] - displayedHeights[index] * ratio;
-      cache.current.isManualScrolling = true;
-      setScrollTop(targetScrollTop);
-      dom.current.scrollTop = targetScrollTop;
-      cache.current.isManualScrolling = false;
-    }
-    cache.current.prevHeight = size.height;
-    cache.current.prevWidth = size.width;
-  }, [accSum, displayedHeights, key, size.height, size.width]);
 
   return (
     <div
@@ -164,7 +170,7 @@ export const VirtualList = <T extends { width: number; height: number }>({
         className={clx(commonStyles.displayedWrap, styles.contentClassName)}
       >
         {displayedList.map((e, index) => (
-          <div style={{ height: displayedHeights[index] }}>
+          <div style={{ height: displayedHeights[index], width: '100%' }}>
             {children(e, startIndex + index)}
           </div>
         ))}
