@@ -4,8 +4,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { useRoutes } from './router';
 import { Detail } from './detail';
 import { Local } from './local';
-import { MangaDataProvider } from './common/manga';
-import { PointSizeProvider } from './common/point-size';
+import { MangaDataProvider } from './service/mangas-provider';
 import { ViewportProvider } from './common/viewport';
 import { OffsetProvider } from './common/offset';
 
@@ -39,20 +38,18 @@ const App = () => {
   return (
     <div className='App'>
       <MangaDataProvider>
-        <PointSizeProvider>
-          <ViewportProvider>
-            <OffsetProvider>
-              <Router>
-                <Routes>
-                  {routes.map((e) => (
-                    <Route path={e.path} element={e.Component} />
-                  ))}
-                  <Route path='*' element={<Local />} />
-                </Routes>
-              </Router>
-            </OffsetProvider>
-          </ViewportProvider>
-        </PointSizeProvider>
+        <ViewportProvider>
+          <OffsetProvider>
+            <Router>
+              <Routes>
+                {routes.map((e) => (
+                  <Route path={e.path} element={e.Component} />
+                ))}
+                <Route path='*' element={<Local />} />
+              </Routes>
+            </Router>
+          </OffsetProvider>
+        </ViewportProvider>
       </MangaDataProvider>
     </div>
   );
